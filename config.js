@@ -1,4 +1,5 @@
 module.exports = {
+	tmpDirectory: __dirname + '/tmp',
 	directory: __dirname + '/downloaded-bills',
 	interval: 60 * 1000,
 	bills: [

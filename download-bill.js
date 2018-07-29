@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 module.exports = downloadFile;
 
-async function downloadFile({url, name: prefix, directory}) {
+async function downloadFile({url, name: prefix, directory, tmpDirectory}) {
 	return new Promise((resolve, reject) => {
 		const req = http.get(url, async (res) => {
 			const {statusCode} = res;
@@ -12,36 +12,35 @@ async function downloadFile({url, name: prefix, directory}) {
 
 			let error;
 			if (statusCode !== 200) {
-				error = new Error('Request Failed.\n' + `Status Code: ${statusCode}`);
-			} else if (!/^application\/pdf/.test(contentType)) {
-				error = new Error('Invalid content-type.\n' + `Expected application/pdf but received ${contentType}`);
+				error = new Error(`Request Failed. Status Code: ${statusCode}`);
+			} else if (!contentType.startsWith('application/pdf')) {
+				error = new Error(`Invalid content-type. Expected application/pdf but received ${contentType}`);
 			}
 			if (error) {
-				console.error(error.message);
 				res.resume(); // consume response data to free up memory
 				return reject(error);
 			}
 
-			const filename = generateTemporaryFilename({prefix});
-			const fileStream = fs.createWriteStream(filename);
+			const tmpFilename = generateTemporaryFilename({tmpDirectory, prefix});
+			const fileStream = fs.createWriteStream(tmpFilename);
 			res.on('data', chunk => fileStream.write(chunk));
 			res.on('end', () => {
 				try {
 					fileStream.end();
-					console.log(`file ${filename} saved to fs`);
+					console.log(`file ${tmpFilename} saved to fs`);
+					// TODO: check file size
 
-					checkFileExists({directory, filename}).then(async ({fileExists}) => {
+					checkFileExists({directory, filename: tmpFilename}).then(async ({fileExists}) => {
 						if (fileExists) {
-							console.log(`skipping downloaded file, removing ${filename}`);
-							fs.unlinkSync(filename);
+							console.log(`skipping downloaded file, removing ${tmpFilename}`);
+							fs.unlinkSync(tmpFilename);
 							return resolve();
 						}
-						const savedFilename = saveCurrentInvoice({directory, filename, prefix});
+						const savedFilename = saveCurrentBill({directory, filename: tmpFilename, prefix});
 						resolve({savedFilename});
 					})
-				} catch (e) {
-					console.error(e.message);
-					reject(e);
+				} catch (err) {
+					reject(err);
 				}
 			});
 		});
@@ -50,8 +49,7 @@ async function downloadFile({url, name: prefix, directory}) {
 
 		req.on('timeout', () => {
 			req.abort();
-			const err = new Error('Request is timed out');
-			reject(err);
+			reject(new Error('Request is timed out'));
 		});
 		req.on('error', (err) => {
 			reject(err);
@@ -105,8 +103,8 @@ async function getFileHash(filename) {
 	});
 }
 
-function saveCurrentInvoice({directory, filename: temporaryFilename, prefix}) {
-	const filename = generateFilenameForCurrentInvoice({prefix});
+function saveCurrentBill({directory, filename: temporaryFilename, prefix}) {
+	const filename = generateFilenameForCurrentBill({prefix});
 	const destinationFilename = `${directory}/${filename}`;
 	if (fs.existsSync(destinationFilename)) {
 		throw new Error(`file ${destinationFilename} already exists`);
@@ -116,11 +114,12 @@ function saveCurrentInvoice({directory, filename: temporaryFilename, prefix}) {
 	return {savedFilename: filename};
 }
 
-function generateTemporaryFilename({prefix = ''} = {}) {
-	return `tmp-${prefix}-${new Date().getTime()}.pdf`;
+function generateTemporaryFilename({prefix = '', tmpDirectory = ''} = {}) {
+	return `${tmpDirectory}/tmp-${prefix}-${new Date().getTime()}.pdf`;
 }
 
-function generateFilenameForCurrentInvoice({prefix = ''} = {}) {
+function generateFilenameForCurrentBill({prefix = ''} = {}) {
+	// TODO: parse date from bill (maybe google vision?)
 	const today = new Date();
 	return `${prefix ? `${prefix}-` : ''}${today.toISOString().substr(0, 7)}.pdf`;
 }

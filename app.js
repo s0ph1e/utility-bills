@@ -1,4 +1,4 @@
-const { bills, directory, interval } = require('./config');
+const { bills, directory, tmpDirectory, interval } = require('./config');
 const downloadBill = require('./download-bill');
 const schedule = require('./scheduler');
 
@@ -10,7 +10,7 @@ async function downloadAllBills () {
 		schedule({
 			id: `download-bill-for-${name}`,
 			interval,
-			fn: () => downloadBill({url, name, directory})
+			fn: () => downloadBill({url, name, directory, tmpDirectory})
 		});
 	}
 }
