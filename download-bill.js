@@ -6,7 +6,7 @@ module.exports = downloadFile;
 
 async function downloadFile({url, name: prefix, directory}) {
 	return new Promise((resolve, reject) => {
-		http.get(url, async (res) => {
+		const req = http.get(url, async (res) => {
 			const {statusCode} = res;
 			const contentType = res.headers['content-type'];
 
@@ -44,9 +44,17 @@ async function downloadFile({url, name: prefix, directory}) {
 					reject(e);
 				}
 			});
-		}).on('error', (e) => {
-			console.error(`Got error: ${e.message}`);
-			reject(e);
+		});
+
+		req.setTimeout(3000);
+
+		req.on('timeout', () => {
+			req.abort();
+			const err = new Error('Request is timed out');
+			reject(err);
+		});
+		req.on('error', (err) => {
+			reject(err);
 		});
 	});
 }
