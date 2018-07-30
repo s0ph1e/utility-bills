@@ -45,12 +45,11 @@ async function downloadFile({url, name: prefix, directory, tmpDirectory}) {
 			});
 		});
 
-		req.setTimeout(3000);
-
-		req.on('timeout', () => {
+		req.setTimeout(3000, () => {
 			req.abort();
 			reject(new Error('Request is timed out'));
 		});
+
 		req.on('error', (err) => {
 			reject(err);
 		});
