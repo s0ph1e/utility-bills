@@ -1,6 +1,7 @@
 const { bills, directory, tmpDirectory, interval } = require('./config');
 const downloadBill = require('./download-bill');
 const schedule = require('./scheduler');
+const telegram = require('./telegram');
 
 async function downloadAllBills () {
 	for (let bill of bills) {
@@ -10,7 +11,17 @@ async function downloadAllBills () {
 		schedule({
 			id: `download-bill-for-${name}`,
 			interval,
-			fn: () => downloadBill({url, name, directory, tmpDirectory})
+			fn: async () => {
+				try {
+					const {isFileSaved, fullPath} = await downloadBill({url, name, directory, tmpDirectory});
+					if (isFileSaved) {
+						await telegram.notifyBillDownloaded({fileFullPath: fullPath});
+					}
+				} catch (error) {
+					await telegram.notifyErrorOccurred({error});
+					throw error;
+				}
+			}
 		});
 	}
 }

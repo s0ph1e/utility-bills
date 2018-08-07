@@ -1,0 +1,23 @@
+{
+  "name": "utility-bills",
+  "private": true,
+  "version": "0.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/s0ph1e/utility-bills.git"
+  },
+  "author": "Sophia Antipenko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/s0ph1e/utility-bills/issues"
+  },
+  "homepage": "https://github.com/s0ph1e/utility-bills#readme",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.30.0"
+  }
+}

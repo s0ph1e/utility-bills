@@ -34,10 +34,10 @@ async function downloadFile({url, name: prefix, directory, tmpDirectory}) {
 						if (fileExists) {
 							console.log(`skipping downloaded file, removing ${tmpFilename}`);
 							fs.unlinkSync(tmpFilename);
-							return resolve();
+							return resolve({isFileSaved: false});
 						}
-						const savedFilename = saveCurrentBill({directory, filename: tmpFilename, prefix});
-						resolve({savedFilename});
+						const {filename, fullPath} = saveCurrentBill({directory, filename: tmpFilename, prefix});
+						resolve({filename, fullPath, isFileSaved: true});
 					})
 				} catch (err) {
 					reject(err);
@@ -110,7 +110,7 @@ function saveCurrentBill({directory, filename: temporaryFilename, prefix}) {
 	}
 	console.log(`moving ${temporaryFilename} to ${destinationFilename}`);
 	fs.renameSync(temporaryFilename, destinationFilename);
-	return {savedFilename: filename};
+	return {filename, fullPath: destinationFilename};
 }
 
 function generateTemporaryFilename({prefix = '', tmpDirectory = ''} = {}) {
